@@ -22,13 +22,11 @@ class MiningAction < DistancedAction
   def find_pickaxe
     PICKAXE_IDS.each do |id|
       weapon = mob.equipment.get(EquipmentConstants::WEAPON)
-      if weapon != nil && weapon.id == id
+      if (weapon != nil && weapon.id == id)
         return PICKAXES[id]
       end
 
-      if mob.inventory.contains(id)
-        return PICKAXES[id]
-      end
+      return PICKAXES[id] if mob.inventory.contains(id)
     end
 
     return nil
@@ -39,7 +37,6 @@ class MiningAction < DistancedAction
   def start_mine(pickaxe)
     @started = true
     mob.send_message('You swing your pick at the rock.', true)
-    mob.turn_to(@position)
     mob.play_animation(pickaxe.animation)
     @counter = pickaxe.pulses
   end
@@ -48,6 +45,7 @@ class MiningAction < DistancedAction
     skills = mob.skill_set
     level = skills.get_skill(MINING_SKILL_ID).current_level
     pickaxe = find_pickaxe
+    mob.turn_to(@position)
 
     # verify the mob can mine with their pickaxe
     unless (pickaxe != nil and level >= pickaxe.level)
@@ -75,7 +73,7 @@ class MiningAction < DistancedAction
           ore_def = ItemDefinition.lookup(@ore.id) # TODO: split off into some method
           name = ore_def.name.sub(/ ore$/, '').downcase
 
-          mob.send_message("You manage to mine some #{name}.")
+          mob.send_message("You manage to mine some #{name}.", true)
           skills.add_experience(MINING_SKILL_ID, ore.exp)
           # TODO: expire the rock
         end
@@ -121,7 +119,7 @@ class ProspectingAction < DistancedAction
   end
 
   def executeAction
-    if not @started
+    unless @started
       @started = true
 
       mob.send_message('You examine the rock for ores...')
@@ -131,7 +129,6 @@ class ProspectingAction < DistancedAction
       name = ore_def.name.sub(/ ore$/, '').downcase
 
       mob.send_message("This rock contains #{name}.")
-
       stop
     end
   end
@@ -141,22 +138,18 @@ class ProspectingAction < DistancedAction
   end
 end
 
-on :event, :object_action do |ctx, mob, event|
-  if event.option == 1
-    ore = ORES[event.id]
-    if ore != nil
-      mob.start_action(MiningAction.new(mob, event.position, ore))
-    end
+on :message, :first_object_action do |ctx, mob, message|
+  ore = ORES[message.id]
+  if ore != nil
+    mob.start_action(MiningAction.new(mob, message.position, ore))
   end
 end
 
-on :event, :object_action do |ctx, mob, event|
-  if event.option == 2
-    ore = ORES[event.id]
-    if ore != nil
-      mob.start_action(ProspectingAction.new(mob, event.position, ore))
-    elsif EXPIRED_ORES[event.id] != nil
-      mob.start_action(ExpiredProspectingAction.new(mob, event.position))
-    end
+on :message, :second_object_action do |ctx, mob, message|
+  ore = ORES[message.id]
+  if ore != nil
+    mob.start_action(ProspectingAction.new(mob, message.position, ore))
+  elsif EXPIRED_ORES[message.id] != nil
+    mob.start_action(ExpiredProspectingAction.new(mob, message.position))
   end
 end

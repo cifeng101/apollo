@@ -3,7 +3,7 @@ package org.apollo.game.model.entity;
 import org.apollo.game.model.Position;
 
 /**
- * Represents an in-game entity, such as a mob, object, projectile etc.
+ * Represents an in-game entity, such as a mob, object, projectile, etc.
  * 
  * @author Major
  */
@@ -69,7 +69,7 @@ public abstract class Entity {
 	 * 
 	 * @return The position.
 	 */
-	public Position getPosition() {
+	public final Position getPosition() {
 		return position;
 	}
 

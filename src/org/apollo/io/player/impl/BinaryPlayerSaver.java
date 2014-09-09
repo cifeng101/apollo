@@ -37,7 +37,7 @@ public final class BinaryPlayerSaver implements PlayerSaver {
 		try (DataOutputStream out = new DataOutputStream(new FileOutputStream(file))) {
 			// write credentials and privileges
 			StreamUtil.writeString(out, player.getUsername());
-			StreamUtil.writeString(out, player.getCredentials().getHashedPassword());
+			StreamUtil.writeString(out, player.getCredentials().getPassword());
 			out.writeByte(player.getPrivilegeLevel().toInteger());
 			out.writeBoolean(player.isMembers());
 
@@ -120,13 +120,13 @@ public final class BinaryPlayerSaver implements PlayerSaver {
 		out.writeByte(type.getValue());
 		switch (type) {
 		case BOOLEAN:
-			out.writeByte((boolean) attribute.getValue() ? 1 : 0);
+			out.writeByte((Boolean) attribute.getValue() ? 1 : 0);
 			break;
 		case DOUBLE:
-			out.writeDouble((double) attribute.getValue());
+			out.writeDouble((Double) attribute.getValue());
 			break;
 		case LONG:
-			out.writeLong((long) attribute.getValue());
+			out.writeLong((Long) attribute.getValue());
 			break;
 		case STRING:
 		case SYMBOL:

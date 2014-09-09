@@ -1,5 +1,7 @@
 package org.apollo.game.model;
 
+import com.google.common.base.Objects;
+
 /**
  * Represents a position in the world.
  * 
@@ -62,18 +64,14 @@ public final class Position {
 	public boolean equals(Object obj) {
 		if (obj == null) {
 			return false;
-		}
-		if (this == obj) {
+		} else if (this == obj) {
 			return true;
-		}
-		if (getClass() != obj.getClass()) {
+		} else if (getClass() != obj.getClass()) {
 			return false;
 		}
+
 		Position other = (Position) obj;
-		if (height != other.height || x != other.x || y != other.y) {
-			return false;
-		}
-		return true;
+		return x == other.x && y == other.y && height == other.height;
 	}
 
 	/**
@@ -221,7 +219,8 @@ public final class Position {
 
 	@Override
 	public String toString() {
-		return Position.class.getName() + " [x=" + x + ", y=" + y + ", height=" + height + "]";
+		return Objects.toStringHelper(this).add("x", x).add("y", y).add("height", height)
+				.add("sector x", getTopLeftSectorX()).add("sector y", getTopLeftSectorY()).toString();
 	}
 
 }

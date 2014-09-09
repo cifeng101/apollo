@@ -13,9 +13,9 @@ import org.apollo.game.model.entity.Player;
 public final class CommandDispatcher {
 
 	/**
-	 * A map of event listeners.
+	 * A map of command strings to command listeners.
 	 */
-	private final Map<String, CommandListener> listeners = new HashMap<String, CommandListener>();
+	private final Map<String, CommandListener> listeners = new HashMap<>();
 
 	/**
 	 * Creates the command dispatcher and registers a listener for the credits command.

@@ -11,7 +11,7 @@ java_import 'org.apollo.game.model.entity.Npc'
 # Information about npc spawning
 #
 # Npcs are passed to spawn npc as a hash. Every key and every non-integer value must be a Symbol. Every hash must implement the following:
-#   :name or :id - the name or the id of the npc. Use of :name is recommended. If this npc shares its name with another, append the specific id after the name (e.g. :woman_4)
+#   :name - the name of the npc. If this npc shares its name with another, append the specific id after the name (e.g. :woman_4)
 #   :x - the x coordinate where the npc will spawn.
 #   :y - the y coordinate where the npc will spawn.
 # Optional arguments are as follows:
@@ -25,14 +25,14 @@ java_import 'org.apollo.game.model.entity.Npc'
 
 # Spawns an npc with the properties specified in the hash.
 def spawn_npc(hash)
-  raise 'A name (or id), x coordinate, and y coordinate must be specified to spawn an npc.' unless (hash.has_key?(:name) || hash.has_key?(:id)) && hash.has_key?(:x) && hash.has_key?(:y)
+  raise 'A name (or id), x coordinate, and y coordinate must be specified to spawn an npc.' unless (hash.has_key?(:name) || hash.has_key?(:id)) && hash.has_keys?(:x, :y)
   npc = get_npc(hash)
   spawn(npc, hash)
 end
 
 # Spawns the specified npc and applies the properties in the hash.
 def spawn(npc, hash)
-  World.world.register(npc)
+  $world.register(npc)
   unless hash.empty?
     hash = decode_hash(npc.position, hash)   # Use npc.position here because sector registry events (called by World.register) can be hooked
     apply_decoded_hash(npc, hash)            # into and someone might do something daft like move the npc immediately after it gets spawned.
@@ -41,17 +41,7 @@ end
 
 # Returns an npc with the id and position specified by the hash.
 def get_npc(hash)
-  id = hash.delete(:id)
-
-  if id == nil
-    name = hash.delete(:name).to_s.gsub('_', ' ')
-    if name.include?(' ')
-      id = name[name.rindex(' ') + 1, name.length - 1].to_i
-    end
-    id = locate_entity('npc', name, 1).first if id == nil || id == 0
-  end
-
-  raise "The npc called #{name} could not be identified." if id == nil
+  id = lookup_npc(hash.delete(:name))
 
   z = hash.delete(:z)
   position = Position.new(hash.delete(:x), hash.delete(:y), z == nil ? 0 : z)
@@ -74,22 +64,23 @@ end
 # Parses the remaining key-value pairs in the hash.
 def decode_hash(position, hash)
   decoded = {}
+
   hash.each do |key, value|
     case key
       when :face
-        facing_position = direction_to_position(value, position)
-        decoded[:face] = facing_position
+        decoded[:face] = direction_to_position(value, position)
       when :delta_bounds
         dx, dy, x, y, z = value[0], value[1], position.x, position.y, position.height
-        raise 'Delta values cannot be less than 0.' if dx < 0 || dy < 0
+        raise 'Delta values cannot be less than 0.' if (dx < 0 || dy < 0)
 
         decoded[:boundary] = [ Position.new(x + dx, y, z), Position.new(x, y + dy, z), Position.new(x - dx, y, z), Position.new(x, y - dy, z) ]
       when :bounds          then decoded[:boundary] = value
       when :spawn_animation then decoded[:spawn_animation] = Animation.new(value)
-      when :spawn_graphic   then decoded[:spawn_graphic] = Graphic.new(value)
+      when :spawn_graphic   then decoded[:spawn_graphic  ] = Graphic.new(value)
       else raise "Unrecognised key #{key} - value #{value}."
     end
   end
+
   return decoded
 end
 
@@ -110,21 +101,6 @@ def direction_to_position(direction, position)
     else return position
   end
 end
-
-
-# Locates an entity with the specified type (e.g. npc) and name, returning possible ids as an array.
-def locate_entity(type, name, limit=5)
-  ids = []
-  name.downcase!
-
-  Kernel.const_get("#{type.capitalize}Definition").definitions.each do |definition|
-    break if ids.length == limit
-    ids << definition.id.to_i if definition.name.to_s.downcase == name
-  end
-
-  return ids
-end
-
 
 # An action that spawns an npc temporarily, before executing an action.
 class TemporaryNpcAction < Action
